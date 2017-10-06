@@ -6,6 +6,8 @@
 #include <iostream>
 #include <memory>
 
+#include <map>
+#include <set>
 #include "range-tree/RangeTree.h"
 
 namespace RT = RangeTree;
@@ -60,7 +62,7 @@ public:
     std::unique_ptr<intervalTree> right;
     K center;
 
-    RT::RangeTree<K,interval*>* rtree;
+    RT::RangeTree<K,std::vector<interval*> >* rtree;
 
     IntervalTree<T,K>(void)
         : left(nullptr)
@@ -120,22 +122,26 @@ public:
             /**** RANGE-TREE ****/
             /********************/
 
-            std::vector<RT::Point<K,interval*>> points = {};
+            std::vector<RT::Point<K,std::vector<interval*> > > points = {};
+
             auto f = [](K a) { std::vector<K> b = {a}; return b;};
+
+            std::map< K, std::vector<interval*> > m;
 
             for (auto i = ivals.begin(); i != ivals.end(); ++i)
             {
                 const interval& tmp_i = *i;
-                RT::Point<K,interval*> tmp_pL(f(tmp_i.start), &(*i));
-                RT::Point<K,interval*> tmp_pR(f(tmp_i.stop), &(*i));
-                points.push_back(tmp_pL);
-                points.push_back(tmp_pR);
+                m[tmp_i.start].push_back(&(*i));
+                m[tmp_i.stop].push_back(&(*i));
             }
 
-            rtree = new RT::RangeTree<K,interval*>(points);
-
-            rtree->print();
-
+            for (auto i = m.begin(); i != m.end(); ++i)
+            {
+                const std::pair<K,std::vector<interval*> >& tmp = *i;
+                RT::Point<K,std::vector<interval*> > tmp_pL(f(tmp.first), tmp.second);
+                points.push_back(tmp_pL);
+            }
+            rtree = new RT::RangeTree<K,std::vector<interval*> >(points);
             /********************/
             /********************/
             /********************/
@@ -184,25 +190,42 @@ public:
 
     intervalVector findOverlapping(K start, K stop) const {
     	intervalVector ov;
+        std::set<interval*> s;
+        /********************/
+        /********************/
+        auto f = [](K a) { std::vector<K> b = {a}; return b;};
+        auto g = [](bool a) { std::vector<bool> b = {a}; return b;};
+        std::vector<RT::Point<K,std::vector<interval*> > > pp = rtree->pointsInRange(f(start), f(stop), g(true), g(true));
+        for (auto i = pp.begin(); i != pp.end(); ++i)
+        {
+            const RT::Point<K,std::vector<interval*> >& tmp = *i;
+            std::vector<interval*> ins = i->value();
+            for (int i = 0; i < ins.size(); ++i)
+            {
+                s.insert(ins[i]);
+            }
+        }
+        /********************/
+        /********************/
+
     	this->findOverlapping(start, stop, ov);
-    	return ov;
+
+        /********************/
+        for (auto i = ov.begin(); i != ov.end(); ++i)
+        {
+            s.insert(&(*i));
+        }
+        intervalVector toReturn;
+        for (auto i = s.begin(); i != s.end(); ++i)
+        {
+            toReturn.push_back(*(*i));
+        }
+        /********************/
+
+    	return toReturn;
     }
 
     void findOverlapping(K start, K stop, intervalVector& overlapping) const {
-
-
-        /********************/
-        /********************/
-        /********************/
-
-        auto f = [](K a) { std::vector<K> b = {a}; return b;};
-        auto g = [](bool a) { std::vector<bool> b = {a}; return b;};
-        //std::cout << "***** " << rtree->countInRange(f(start), f(stop)) << std::endl; 
-        //std::cout << "***** " << rtree->pointsInRange(f(start), f(stop)).size() << std::endl; 
-        
-        /********************/
-        /********************/
-        /********************/
 
         if (!intervals.empty() && ! (stop < intervals.front().start)) {
             for (typename intervalVector::const_iterator i = intervals.begin(); i != intervals.end(); ++i) {

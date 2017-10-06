@@ -12,7 +12,7 @@ if [ ! -f "$queries" ]; then
     exit
 fi
 
-declare -a SUFFIXES=("0" "10" "25" "50")
+declare -a SUFFIXES=("10" "25")
 for N in "${SUFFIXES[@]}"
 do
 	intervals="$AUX""data/intervals/""$N"".txt"

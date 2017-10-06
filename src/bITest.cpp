@@ -48,7 +48,7 @@ void readQueries(const char *inFilename, const char *outFilename){
 		vector<Interval<long, double> > auxRes;
 
 		chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
-		temporalTree->findOverlapping(temporalWindow->start,temporalWindow->stop,auxRes);
+		auxRes = temporalTree->findOverlapping(temporalWindow->start,temporalWindow->stop);
 		for(int i=0;i<auxRes.size();i++)
 		{
 			resArray->insert(auxRes[i].value);
